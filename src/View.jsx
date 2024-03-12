@@ -8,7 +8,6 @@ import {
   TextField,
 } from "@mui/material";
 import axios from "axios";
-
 const View = () => {
   var i = 0;
   const [userData, setUserData] = useState(null);
@@ -16,7 +15,7 @@ const View = () => {
   const [queryValue, setQueryValue] = useState("A1");
   const [selectedOption, setSelectedOption] = useState(null);
   const [timeInput, setTimeInput] = useState("");
-
+  const [requestStatus, setRequestStatus] = useState(null);
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -30,8 +29,10 @@ const View = () => {
 
         setUserData(response.data.data);
         console.log(response.data.data);
+        setRequestStatus("success");
       } catch (error) {
         console.error("Error making GET request", error);
+        setRequestStatus("error");
       }
     };
 
@@ -106,6 +107,9 @@ const View = () => {
             onChange={handleTimeInputChange}
           />
         </Stack>
+      )}
+      {requestStatus === "error" && (
+        <Typography style={{ color: "red" }}>Error making request. Please try again.</Typography>
       )}
       {userData && (
         <div>

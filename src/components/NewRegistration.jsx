@@ -23,6 +23,7 @@ const NewRegistration = () => {
   const [b, setB] = useState("");
   const [c, setC] = useState("");
   const [price, setPrice] = useState(0);
+  const [requestStatus, setRequestStatus] = useState(null);
 
   // Event handlers
   const handleTimeentry = (event) => {
@@ -56,8 +57,8 @@ const NewRegistration = () => {
         exitDate &&
         (a || b || c)
       ) {
-        const entryTime = new Date(`0001-01-01T${selectedEntryTime}:00`);
-        const exitTime = new Date(`0001-01-01T${selectedExitTime}:00`);
+        const entryTime = new Date(`${entryDate}T${selectedEntryTime}:00`);
+        const exitTime = new Date(`${exitDate}T${selectedExitTime}:00`);
         const differenceInMs = Math.abs(
           entryTime.getTime() - exitTime.getTime()
         );
@@ -86,30 +87,63 @@ const NewRegistration = () => {
   setB('');
   setC('');
   }
-const submitdata=()=>{
-  const data={};
-  if (Useremail) data.UserEmail = Useremail;
-  const startTime = new Date(`${entryDate}T${selectedEntryTime}:00`);
-  data.startTime = startTime.toISOString();
-  const endTime = new Date(`${exitDate}T${selectedExitTime}:00`);
-  data.endTime = endTime.toISOString();
-  if (price) data.totalPrice =price;
-  if (a) data.roomNumber = a;
-  if (b) data.roomNumber = b;
-  if (c) data.roomNumber =c;
- 
-  axios
-  .post(
-    "https://alcor.onrender.com/api/booking",
-    data
-  )
-  .then((response) => {
-    console.log("Post request successful", response);
-  })
-  .catch((error) => {
-    console.error("Error making POST request", error);
-  });
-}
+  const submitdata = () => {
+    // Create data object
+    const data = {};
+    if (Useremail) data.userEmail = Useremail;
+    const startTime = new Date(`${entryDate}T${selectedEntryTime}:00Z`);
+    data.startTime = startTime.toISOString();
+    const endTime = new Date(`${exitDate}T${selectedExitTime}:00Z`);
+    data.endTime = endTime.toISOString();
+    if (price) data.totalPrice = price;
+    if (a) {
+      data.roomNumber = a;
+      data.roomType = "A";
+    }
+    if (b) {
+      data.roomNumber = b;
+      data.roomType = "B";
+    }
+    if (c) {
+      data.roomNumber = c;
+      data.roomType = "C";
+    }
+  
+    // Preliminary check for room availability
+    const preliminaryCheckData = {
+      startTime: data.startTime,
+      endTime: data.endTime,
+      roomNumber: data.roomNumber,
+    };
+  
+    axios
+      .post("https://alcor.onrender.com/api/checkBooking", preliminaryCheckData)
+      .then((preliminaryResponse) => {
+        const isRoomAvailable = preliminaryResponse.data.available;
+  
+        if (!isRoomAvailable) {
+          // Room is available, proceed with the original booking request
+          axios
+            .post("https://alcor.onrender.com/api/booking", data)
+            .then((response) => {
+              console.log("Post request successful", response);
+              setRequestStatus("success");
+            })
+            .catch((error) => {
+              console.error("Error making POST request", error);
+              setRequestStatus("error");
+            });
+        } else {
+          // Room is not available, show alert
+          alert("Room is already booked. Please choose another room or time slot.");
+        }
+      })
+      .catch((error) => {
+        console.error("Error checking for room availability", error);
+        setRequestStatus("error");
+      });
+  };
+  
   return (
     <>
       <form style={{ width: "50%", marginTop: "1rem" }}>
@@ -247,6 +281,13 @@ const submitdata=()=>{
       </Stack>
       <Typography>{`Total Price: ${price}`}</Typography>
       <Button type="submit" variant="contained" onClick={submitdata}>Proceed</Button>
+      {requestStatus === "success" && (
+        <Typography style={{ color: "green" }}>Room Booked Succesfully</Typography>
+      )}
+
+      {requestStatus === "error" && (
+        <Typography style={{ color: "red" }}>Error making request. Please try again.</Typography>
+      )}
     </>
   );
 };

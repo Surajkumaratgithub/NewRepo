@@ -15,7 +15,6 @@ function App() {
     <Route path="/edit" element={<Edit/>}/>
     <Route path="/view" element={<View/>}/>
     <Route path="/delete" element={<Deletedd/>}/>
-
     <Route path="*" element={<NotFound/>}/>
 
     </Routes>
